@@ -4,7 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
@@ -64,7 +65,7 @@ func (c IssuerConfig) Validate() error {
 	}
 
 	if !c.Type.Valid() {
-		return fmt.Errorf("issuer: issuer %q is not a valid issuer", c.Name)
+		return fmt.Errorf("issuer %q: invalid type %q", c.Name, c.Type)
 	}
 
 	switch c.Type {
@@ -82,8 +83,8 @@ func (c IssuerConfig) Validate() error {
 		if c.RS256 == nil {
 			return fmt.Errorf("issuer %q: type rs256 requires rs256 settings", c.Name)
 		}
-		if c.RS256.JWKSURL == "" {
-			return fmt.Errorf("issuer %q: rs256 jwksURL is required", c.Name)
+		if c.RS256.JwksUrl == "" {
+			return fmt.Errorf("issuer %q: rs256 jwksUrl is required", c.Name)
 		}
 		if c.HS256 != nil {
 			return fmt.Errorf("issuer %q: rs256 issuer must not have hs256 settings", c.Name)
@@ -95,10 +96,10 @@ func (c IssuerConfig) Validate() error {
 }
 
 type HS256Settings struct {
-	Secret string
+	Secret string `yaml:"secret"`
 }
 
 type RS256Settings struct {
-	JWKSURL    string
-	RefreshTTL time.Duration
+	JwksUrl    string `yaml:"jwksUrl"`
+	RefreshTtl string `yaml:"refreshTtl"`
 }

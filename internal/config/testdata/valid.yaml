@@ -1,0 +1,12 @@
+issuers:
+  - name: internal
+    issuer: https://internal.example.com
+    type: hs256
+    hs256:
+      secret: testing-only-change-me
+  - name: okta
+    issuer: https://example.okta.com/oauth2/default
+    type: rs256
+    rs256:
+      jwksUrl: https://example.okta.com/oauth2/default/v1/keys
+      refreshTtl: 5m
