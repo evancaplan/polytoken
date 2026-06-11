@@ -8,6 +8,6 @@ type Principal struct {
 	Scopes    []string
 	Roles     []string
 	IssuedAt  time.Time
-	expiresAt time.Time
-	claims    map[string]interface{}
+	ExpiresAt time.Time
+	Claims    map[string]interface{}
 }
