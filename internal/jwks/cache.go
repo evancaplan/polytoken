@@ -12,11 +12,11 @@ import (
 	"time"
 )
 
-type jwksDoc struct {
-	Keys []jwkKey `json:"keys"`
+type JwksDoc struct {
+	Keys []JwkKey `json:"keys"`
 }
 
-type jwkKey struct {
+type JwkKey struct {
 	Kty string `json:"kty"`
 	N   string `json:"n"`
 	E   string `json:"e"`
@@ -61,7 +61,7 @@ func (c *Cache) Refresh(ctx context.Context) error {
 		return fmt.Errorf("jwks: non-200 response from jwks endpoint: %d", resp.StatusCode)
 	}
 
-	var doc jwksDoc
+	var doc JwksDoc
 	if err := json.NewDecoder(resp.Body).Decode(&doc); err != nil {
 		return fmt.Errorf("jwks: decode response: %w", err)
 	}
@@ -105,7 +105,7 @@ func (c *Cache) Key(ctx context.Context, kid string) (*rsa.PublicKey, error) {
 	return key, nil
 }
 
-func jwkToRSA(k jwkKey) (*rsa.PublicKey, error) {
+func jwkToRSA(k JwkKey) (*rsa.PublicKey, error) {
 	if k.Kty != "RSA" {
 		return nil, fmt.Errorf("unsupported key type %q", k.Kty)
 	}
