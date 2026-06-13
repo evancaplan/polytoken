@@ -1,0 +1,6 @@
+issuers:
+  - name: local-test
+    issuer: https://test.local
+    type: hs256
+    hs256:
+      secret: my-test-secret
