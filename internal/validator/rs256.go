@@ -48,3 +48,7 @@ func (v *Rs256Validator) Validate(ctx context.Context, token string) (*principal
 
 	return principalFromClaims(claims)
 }
+
+func (v *Rs256Validator) CanHandle(token string) bool {
+	return issuerMatches(token, v.issuer)
+}

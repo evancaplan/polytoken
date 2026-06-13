@@ -9,6 +9,16 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+func issuerMatches(token, expectedIssuer string) bool {
+	parser := jwt.NewParser()
+	claims := jwt.MapClaims{}
+	if _, _, err := parser.ParseUnverified(token, claims); err != nil {
+		return false
+	}
+	iss, _ := claims.GetIssuer()
+	return iss == expectedIssuer
+}
+
 func principalFromClaims(claims jwt.MapClaims) (*principal.Principal, error) {
 	iss, err := claims.GetIssuer()
 	if err != nil {
