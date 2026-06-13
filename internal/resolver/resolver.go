@@ -11,6 +11,8 @@ type Resolver struct {
 	validators []validator.TokenValidator
 }
 
+var ErrNoValidator = errors.New("resolver: no validator can handle this token")
+
 func NewResolver(validators []validator.TokenValidator) *Resolver {
 	return &Resolver{validators: validators}
 }
@@ -21,5 +23,5 @@ func (r *Resolver) Validate(ctx context.Context, token string) (*principal.Princ
 			return v.Validate(ctx, token)
 		}
 	}
-	return nil, errors.New("resolver: no validator can handle this token")
+	return nil, ErrNoValidator
 }
