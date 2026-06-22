@@ -1,6 +1,11 @@
 issuers:
   - name: local-test
-    issuer: https://test.local
+    issuer: test.local
     type: hs256
     hs256:
       secret: my-test-secret
+  - name: rsa-test
+    issuer: other.local
+    type: rs256
+    rs256:
+      jwksUrl: http://localhost:9000/jwks.json
