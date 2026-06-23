@@ -1,22 +1,29 @@
 # polytoken
 
-A configurable, multi-issuer JWT validation service written in Go. It validates tokens from any number of configured
-issuers, each using its own signing scheme (HMAC shared-secret or RSA via JWKS), and routes each token to the right
-validator at request time based on its `iss` claim.
+A configurable, multi-issuer JWT validation service written in Go. It validates tokens from any number of configured issuers, each using its own signing scheme (HMAC shared-secret or RSA via JWKS), and routes each token to the right validator at request time based on its `iss` claim.
 
 ## Why this exists
 
-I built and ran a multi-issuer JWT setup in production using Java and Spring Security, where one issuer was a legacy
-internal service signing tokens with a shared HMAC secret and another was Okta issuing asymmetrically-signed tokens
-validated against a JWKS endpoint. Spring Security's out-of-the-box resource-server configuration assumes a single
-issuer and is oriented around JWKS validation, so supporting a symmetric legacy issuer alongside an asymmetric one
-required custom `JwtDecoder` wiring and issuer-based routing rather than the default auto-configuration.
+I built and ran a multi-issuer JWT setup in production using Java and Spring Security, where one issuer was a legacy internal service signing tokens with a shared HMAC secret and another was Okta issuing asymmetrically-signed tokens validated against a JWKS endpoint. Spring Security's out-of-the-box resource-server configuration assumes a single issuer and is oriented around JWKS validation, so supporting a symmetric legacy issuer alongside an asymmetric one required custom `JwtDecoder` wiring and issuer-based routing rather than the default auto-configuration.
 
-This project is a clean-room reimplementation of that pattern in Go. I built it primarily to learn Go in depth (
-idiomatic interfaces, concurrency, the standard library, testing) by porting an architecture I already understood,
-rather than learning a new language and a new problem at the same time. Production systems would typically reach for a
-maintained library like Auth0's `go-jwt-middleware`; this is a from-scratch implementation built to understand the
-internals and the design tradeoffs (routing, key caching, rotation, algorithm pinning).
+This project is a clean-room reimplementation of that pattern in Go. I built it primarily to learn Go in depth (idiomatic interfaces, concurrency, the standard library, testing) by porting an architecture I already understood, rather than learning a new language and a new problem at the same time. Production systems would typically reach for a maintained library like Auth0's `go-jwt-middleware`; this is a from-scratch implementation built to understand the internals and the design tradeoffs (routing, key caching, rotation, algorithm pinning).
+
+## Quickstart
+
+The fastest way to see it working is Docker Compose, which runs the service alongside a local JWKS server so both the HMAC and RSA paths work out of the box.
+
+```bash
+docker compose up --build
+```
+
+Then mint a token and call the authenticated endpoint:
+
+```bash
+# HMAC-signed token
+go run ./cmd/mint --secret my-test-secret --iss https://test.local
+
+curl -H "Authorization: Bearer <token>" localhost:8080/whoami
+```
 
 ## How it works
 
@@ -24,12 +31,9 @@ A token arrives, and the service:
 
 1. Reads the unverified `iss` claim to decide which validator should handle it (routing).
 2. Hands the token to that validator, which performs full cryptographic verification (signature, expiry, issuer).
-3. On success, produces a normalized `Principal` that downstream code consumes without needing to know which issuer or
-   algorithm produced the token.
+3. On success, produces a normalized `Principal` that downstream code consumes without needing to know which issuer or algorithm produced the token.
 
-Routing and verification are deliberately separate. Routing reads unverified claims and is never a security decision; it
-only picks which validator runs. The chosen validator then does the real cryptographic check, so a token claiming any
-`iss` cannot bypass verification.
+Routing and verification are deliberately separate. Routing reads unverified claims and is never a security decision; it only picks which validator runs. The chosen validator then does the real cryptographic check, so a token claiming any `iss` cannot bypass verification.
 
 ### Architecture
 
@@ -49,13 +53,11 @@ validator -->  verifies signature + claims, returns a Principal
    +-- RS256: RSA, public keys fetched and cached from a JWKS endpoint
 ```
 
-The HTTP layer wraps this in middleware that extracts the bearer token, runs it through the resolver, and stores the
-resulting `Principal` in the request context for handlers to read.
+The HTTP layer wraps this in middleware that extracts the bearer token, runs it through the resolver, and stores the resulting `Principal` in the request context for handlers to read.
 
 ## Configuration
 
-Issuers are declared in a YAML file. Each issuer has a name, the `iss` value it mints, a type, and type-specific
-settings.
+Issuers are declared in a YAML file. Each issuer has a name, the `iss` value it mints, a type, and type-specific settings.
 
 ```yaml
 issuers:
@@ -72,16 +74,27 @@ issuers:
       jwksUrl: https://example.okta.com/oauth2/default/v1/keys
 ```
 
-Adding an issuer is a config change with no code change. Configuration is validated at startup, so a misconfigured
-issuer fails fast rather than at request time.
+Adding an issuer is a config change with no code change. Configuration is validated at startup, so a misconfigured issuer fails fast rather than at request time.
 
 ## Running it
+
+### With Docker Compose (recommended)
+
+```bash
+docker compose up --build
+```
+
+This starts two containers: the polytoken service on `:8080`, and an nginx container serving a local `jwks.json` for the RSA issuer. Inside the Compose network the service reaches the JWKS server by its service name (`http://jwks:80/jwks.json`), which is how the RSA path is configured in the bundled `config.yaml`.
+
+### Directly
 
 ```bash
 go run ./cmd/polytokend
 ```
 
-The service reads `config.yaml` and listens on `:8080`.
+The service reads `config.yaml` and listens on `:8080`. For the RSA path to work this way, point the issuer's `jwksUrl` at a reachable JWKS endpoint.
+
+### Endpoints
 
 Health check (unauthenticated):
 
@@ -98,18 +111,31 @@ curl -H "Authorization: Bearer <token>" localhost:8080/whoami
 
 A request with no token, an unrecognized issuer, an invalid signature, or an expired token returns `401 Unauthorized`.
 
+## Minting test tokens
+
+A small CLI mints signed tokens for both schemes, so you can exercise the service without an external identity provider.
+
+HMAC (HS256):
+
+```bash
+go run ./cmd/mint --secret my-test-secret --iss https://test.local
+```
+
+RSA (RS256): generates a keypair, prints the token, and prints a matching JWKS document. Save the JWKS to `jwks.json` (served by the nginx container in the Compose setup) and use the token from the same run, since each run generates a fresh keypair.
+
+```bash
+go run ./cmd/mint --type rs256 --iss other.local
+```
+
+Flags include `--iss`, `--sub`, `--scope`, `--roles`, `--exp-hours`, `--kid`, and `--secret`.
+
 ## Design notes
 
-**Algorithm pinning.** Each validator pins the accepted signing method (HS256 validators accept only HS256, RS256 only
-RS256). This prevents algorithm-confusion attacks where a token's header claims a different algorithm than expected.
+**Algorithm pinning.** Each validator pins the accepted signing method (HS256 validators accept only HS256, RS256 only RS256). This prevents algorithm-confusion attacks where a token's header claims a different algorithm than expected.
 
-**JWKS caching and rotation.** RSA public keys are fetched from the issuer's JWKS endpoint and cached in memory, keyed
-by key ID (`kid`). When a token presents a `kid` the cache has not seen, the cache refetches the key set, which handles
-issuer key rotation transparently. The cache is safe for concurrent use: reads take a shared lock, and a refresh builds
-a fresh key map and swaps it under a write lock without holding the lock during the network fetch.
+**JWKS caching and rotation.** RSA public keys are fetched from the issuer's JWKS endpoint and cached in memory, keyed by key ID (`kid`). When a token presents a `kid` the cache has not seen, the cache refetches the key set, which handles issuer key rotation transparently. The cache is safe for concurrent use: reads take a shared lock, and a refresh builds a fresh key map and swaps it under a write lock without holding the lock during the network fetch.
 
-**Extensibility.** Validator construction uses a small registry mapping issuer type to a constructor function. Adding a
-new signing scheme means writing one constructor and registering it; no existing code changes.
+**Extensibility.** Validator construction uses a small registry mapping issuer type to a constructor function. Adding a new signing scheme means writing one constructor and registering it; no existing code changes.
 
 ## Testing
 
@@ -121,24 +147,32 @@ Tests cover each layer independently:
 
 - Config parsing and validation, including malformed and incomplete issuers.
 - HS256 validation across valid, expired, wrong-secret, wrong-issuer, and missing-claim cases.
-- RS256 validation end to end, using a generated RSA keypair and a local test server that serves a matching JWKS
-  document.
+- RS256 validation end to end, using a generated RSA keypair and a local test server that serves a matching JWKS document.
 - JWKS cache key rotation, by mutating what the test server serves mid-test and asserting the cache recovers.
-- Resolver routing, using interface-based test doubles to assert that a token is dispatched to the correct validator and
-  that an unmatched token is rejected.
+- Resolver routing, using interface-based test doubles to assert that a token is dispatched to the correct validator and that an unmatched token is rejected.
+
+## Project layout
+
+```
+cmd/polytokend      the HTTP service
+cmd/mint            the test-token minting CLI
+internal/config     config loading and validation
+internal/validator  TokenValidator interface, HS256/RS256 validators, factory
+internal/jwks       the concurrent JWKS cache
+internal/resolver   issuer-based routing
+internal/middleware bearer-token extraction and principal injection
+internal/principal  the normalized identity type
+```
 
 ## Status and future work
 
-The core is complete and tested: configuration, validator factory, both validators, the JWKS cache, the resolver, and
-the HTTP middleware.
+Complete: configuration, validator factory, both validators, the JWKS cache, the resolver, the HTTP middleware, the token-minting CLI, and a Docker Compose setup that runs the service with a local JWKS server.
 
 Planned:
 
 - Refresh throttling on the JWKS cache to bound refetches under unknown-`kid` load.
-- A token-minting helper for generating test tokens.
-- Containerization (`Dockerfile` and `docker-compose` with a local issuer for end-to-end demos).
-- Support for additional issuer types (for example, opaque-token introspection) to exercise the extensibility of the
-  registry.
+- Support for additional issuer types (for example, opaque-token introspection) to exercise the extensibility of the registry.
+- Mounting configuration rather than baking it into the image, so config changes do not require a rebuild.
 
 ## License
 

@@ -1,6 +1,6 @@
 issuers:
   - name: local-test
-    issuer: test.local
+    issuer: https://test.local
     type: hs256
     hs256:
       secret: my-test-secret
@@ -8,4 +8,5 @@ issuers:
     issuer: other.local
     type: rs256
     rs256:
-      jwksUrl: http://localhost:9000/jwks.json
+      jwksUrl: http://jwks:80/jwks.json
+

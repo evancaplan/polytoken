@@ -1,0 +1,14 @@
+services:
+  polytoken:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - jwks
+
+  jwks:
+    image: nginx:alpine
+    volumes:
+      - ./jwks.json:/usr/share/nginx/html/jwks.json:ro
+    ports:
+      - "9000:80"
