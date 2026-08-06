@@ -84,3 +84,37 @@ func TestHs256Validate(t *testing.T) {
 		}
 	})
 }
+
+func FuzzHs256Validate(f *testing.F) {
+	secret := []byte("test-secret")
+	issuer := "https://issuer.example.com"
+	v := NewHs256Validator(issuer, secret)
+	now := time.Now()
+
+	// seed corpus: reuse your existing valid/invalid cases as starting points
+	f.Add(mintHS256(&testing.T{}, secret, jwt.MapClaims{
+		"iss": issuer, "sub": "user-123",
+		"iat": now.Unix(), "exp": now.Add(time.Hour).Unix(),
+		"scope": "read write", "roles": []any{"admin", "editor"},
+	}))
+	f.Add(mintHS256(&testing.T{}, secret, jwt.MapClaims{
+		"iss": issuer, "sub": "u", "exp": now.Add(-time.Hour).Unix(),
+	}))
+	f.Add("not-a-jwt-at-all")
+	f.Add("")
+	f.Add("....")
+	f.Add("eyJhbGciOiJub25lIn0.eyJzdWIiOiJ1In0.")
+
+	f.Fuzz(func(t *testing.T, token string) {
+		// the only real invariant: it must never panic,
+		// regardless of what garbage comes in
+		p, err := v.Validate(context.Background(), token)
+
+		// if it claims success, the payload better be internally consistent
+		if err == nil {
+			if p.Sub == "" {
+				t.Errorf("validated token with empty sub: %q", token)
+			}
+		}
+	})
+}

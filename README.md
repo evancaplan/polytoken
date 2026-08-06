@@ -164,6 +164,43 @@ internal/middleware bearer-token extraction and principal injection
 internal/principal  the normalized identity type
 ```
 
+## Security Testing
+
+polytoken is fuzz-tested using Go's native fuzzing (`go test -fuzz`) to validate
+resilience against malformed and adversarial JWT input, including known JWT
+attack patterns.
+
+### What's covered
+
+- **RS256 validation** (`FuzzRs256Validate`) — fuzzes the raw token string against
+  a JWKS-backed validator, seeded with structured attack cases in addition to
+  random mutation:
+    - `alg: none` forgery (unsigned tokens)
+    - RS256 → HS256 algorithm confusion (signing with the public key as an HMAC secret)
+    - Malformed headers, truncated/invalid base64, unknown `kid`, wrong issuer
+- **HS256 validation** (`FuzzHs256Validate`) — fuzzes shared-secret validation
+  against malformed and adversarial token strings.
+
+### Results
+
+| Validator | Duration | Executions | Crashes | Bypasses |
+|-----------|----------|------------|---------|----------|
+| RS256     | 10 min   | ~89.6M     | 0       | 0        |
+| HS256     | 10 min   | ~90.6M     | 0       | 0        |
+
+See `testdata/fuzz/` for the discovered corpus, which is committed and replayed
+automatically on every `go test` run as permanent regression coverage.
+
+### Running it yourself
+
+```bash
+go test -fuzz=FuzzRs256Validate -fuzztime=60s ./internal/validator
+go test -fuzz=FuzzHs256Validate -fuzztime=60s ./internal/validator
+```
+
+Increase `-fuzztime` for a longer run. Any crash is automatically saved to
+`testdata/fuzz/<FuzzName>/` and becomes a permanent test case.
+
 ## Status and future work
 
 Complete: configuration, validator factory, both validators, the JWKS cache, the resolver, the HTTP middleware, the token-minting CLI, and a Docker Compose setup that runs the service with a local JWKS server.

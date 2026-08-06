@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -138,4 +140,76 @@ func TestRs256Validate(t *testing.T) {
 			t.Fatal("expected error for unknown kid")
 		}
 	})
+}
+
+func FuzzRs256Validate(f *testing.F) {
+	key := keyPair(&testing.T{})
+	kid := "test-key-1"
+	issuer := "https://issuer.example.com"
+
+	server := newJWKSServer(&testing.T{}, &key, kid)
+	defer server.Close()
+
+	cache := jwks.NewCache(server.URL, nil)
+	v := NewRs256Validator(issuer, cache)
+	now := time.Now()
+
+	// seed corpus
+	f.Add(mintRS256(&testing.T{}, &key, kid, jwt.MapClaims{
+		"iss": issuer, "sub": "user-123", "exp": now.Add(time.Hour).Unix(),
+	}))
+	f.Add(mintRS256(&testing.T{}, &key, "unknown-kid", jwt.MapClaims{
+		"iss": issuer, "sub": "u", "exp": now.Add(time.Hour).Unix(),
+	}))
+
+	// classic alg-confusion probes: these are worth seeding explicitly,
+	// not just hoping the mutator stumbles onto them
+	f.Add(forgeAlgNone(issuer, "user-123", now.Add(time.Hour).Unix()))
+	f.Add(forgeHS256SignedWithPublicKeyPEM(&key.PublicKey, issuer, "user-123", now.Add(time.Hour).Unix()))
+	f.Add("")
+	f.Add("....")
+	f.Add("not-a-jwt")
+
+	f.Fuzz(func(t *testing.T, token string) {
+		p, err := v.Validate(context.Background(), token)
+
+		if err == nil && p.Sub == "" {
+			t.Errorf("validated token with empty sub: %q", token)
+		}
+	})
+}
+
+// forges a token with alg=none and no signature — some libraries
+// historically trusted this if not explicitly rejected
+func forgeAlgNone(iss, sub string, exp int64) string {
+	header := `{"alg":"none","typ":"JWT"}`
+	claims, _ := json.Marshal(jwt.MapClaims{"iss": iss, "sub": sub, "exp": exp})
+	enc := func(b []byte) string { return base64.RawURLEncoding.EncodeToString(b) }
+	return enc([]byte(header)) + "." + enc(claims) + "."
+}
+
+// forges a token claiming HS256, signed using the RSA public key's PEM
+// bytes as the HMAC secret — the classic RS256->HS256 confusion attack,
+// since public keys are... public
+func forgeHS256SignedWithPublicKeyPEM(pub *rsa.PublicKey, iss, sub string, exp int64) string {
+	pubPEM := publicKeyToPEM(pub) // marshal to PEM bytes
+	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"iss": iss, "sub": sub, "exp": exp,
+	})
+	signed, _ := tok.SignedString(pubPEM)
+	return signed
+}
+
+func publicKeyToPEM(pub *rsa.PublicKey) []byte {
+	der, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		// seed-generation helper, panic is fine here — this only
+		// runs at fuzz setup time, never on fuzzer-controlled input
+		panic(err)
+	}
+	block := &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: der,
+	}
+	return pem.EncodeToMemory(block)
 }
