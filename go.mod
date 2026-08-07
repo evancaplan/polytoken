@@ -1,4 +1,4 @@
-module polytoken
+module github.com/evancaplan/polytoken
 
 go 1.26
 
