@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"polytoken/internal/jwks"
+	"github.com/evancaplan/polytoken/internal/jwks"
 	"strings"
 	"time"
 

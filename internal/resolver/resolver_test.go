@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"polytoken/internal/principal"
-	"polytoken/internal/validator"
+	"github.com/evancaplan/polytoken/internal/principal"
+	"github.com/evancaplan/polytoken/internal/validator"
 )
 
 type stubValidator struct {

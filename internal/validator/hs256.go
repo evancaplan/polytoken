@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"polytoken/internal/principal"
+	"github.com/evancaplan/polytoken/internal/principal"
 
 	"github.com/golang-jwt/jwt/v5"
 )

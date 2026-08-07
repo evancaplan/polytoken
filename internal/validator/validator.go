@@ -1,7 +1,7 @@
 package validator
 
 import "context"
-import "polytoken/internal/principal"
+import "github.com/evancaplan/polytoken/internal/principal"
 
 type TokenValidator interface {
 	Validate(ctx context.Context, token string) (*principal.Principal, error)

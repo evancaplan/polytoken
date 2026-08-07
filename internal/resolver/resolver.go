@@ -3,8 +3,8 @@ package resolver
 import (
 	"context"
 	"errors"
-	"polytoken/internal/principal"
-	"polytoken/internal/validator"
+	"github.com/evancaplan/polytoken/internal/principal"
+	"github.com/evancaplan/polytoken/internal/validator"
 )
 
 type Resolver struct {
