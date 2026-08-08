@@ -11,7 +11,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
-	"github.com/evancaplan/polytoken/internal/jwks"
+	"github.com/evancaplan/polytoken/jwks"
 	"testing"
 	"time"
 

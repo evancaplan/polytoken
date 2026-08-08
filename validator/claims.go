@@ -2,7 +2,7 @@ package validator
 
 import (
 	"errors"
-	"github.com/evancaplan/polytoken/internal/principal"
+	"github.com/evancaplan/polytoken/principal"
 	"strings"
 	"time"
 

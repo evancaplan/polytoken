@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/evancaplan/polytoken/internal/jwks"
-	"github.com/evancaplan/polytoken/internal/principal"
+	"github.com/evancaplan/polytoken/jwks"
+	"github.com/evancaplan/polytoken/principal"
 
 	"github.com/golang-jwt/jwt/v5"
 )

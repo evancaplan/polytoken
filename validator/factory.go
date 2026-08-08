@@ -2,8 +2,8 @@ package validator
 
 import (
 	"fmt"
-	"github.com/evancaplan/polytoken/internal/config"
-	"github.com/evancaplan/polytoken/internal/jwks"
+	"github.com/evancaplan/polytoken/config"
+	"github.com/evancaplan/polytoken/jwks"
 )
 
 type validatorFactory func(cfg config.IssuerConfig) (TokenValidator, error)
