@@ -156,12 +156,12 @@ Tests cover each layer independently:
 ```
 cmd/polytokend      the HTTP service
 cmd/mint            the test-token minting CLI
-internal/config     config loading and validation
-internal/validator  TokenValidator interface, HS256/RS256 validators, factory
-internal/jwks       the concurrent JWKS cache
-internal/resolver   issuer-based routing
-internal/middleware bearer-token extraction and principal injection
-internal/principal  the normalized identity type
+config     config loading and validation
+validator  TokenValidator interface, HS256/RS256 validators, factory
+jwks       the concurrent JWKS cache
+resolver   issuer-based routing
+middleware bearer-token extraction and principal injection
+principal  the normalized identity type
 ```
 
 ## Security Testing
