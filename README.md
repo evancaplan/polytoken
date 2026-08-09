@@ -127,7 +127,7 @@ RSA (RS256): generates a keypair, prints the token, and prints a matching JWKS d
 go run ./cmd/mint --type rs256 --iss other.local
 ```
 
-Flags include `--iss`, `--sub`, `--scope`, `--roles`, `--exp-hours`, `--kid`, and `--secret`.
+Flags include `aud`, `--iss`, `--sub`, `--scope`, `--roles`, `--exp-hours`, `--kid`, and `--secret`.
 
 ## Design notes
 

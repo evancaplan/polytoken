@@ -9,14 +9,16 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"github.com/evancaplan/polytoken/jwks"
 	"strings"
 	"time"
+
+	"github.com/evancaplan/polytoken/jwks"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 func main() {
+	aud := flag.String("aud", "https://test.local", "audience")
 	typ := flag.String("type", "hs256", "hs256 or rs256")
 	iss := flag.String("iss", "https://test.local", "issuer")
 	kid := flag.String("kid", "test-key-1", "key id (rs256)")
@@ -33,7 +35,7 @@ func main() {
 
 	if *typ == "hs256" {
 
-		tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims(iss, sub, expHours, scope, getRoles(roles)))
+		tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims(aud, iss, sub, expHours, scope, getRoles(roles)))
 
 		s, err := tok.SignedString([]byte(*secret))
 		if err != nil {
@@ -51,7 +53,7 @@ func main() {
 			log.Fatalf("mint token: %v", err)
 		}
 
-		tok := jwt.NewWithClaims(jwt.SigningMethodRS256, claims(iss, sub, expHours, scope, r))
+		tok := jwt.NewWithClaims(jwt.SigningMethodRS256, claims(aud, iss, sub, expHours, scope, r))
 		tok.Header["kid"] = *kid
 
 		s, err := tok.SignedString(key)
@@ -92,8 +94,9 @@ func getRoles(roles *string) []string {
 	return r
 }
 
-func claims(iss *string, sub *string, expHours *int, scope *string, r []string) jwt.MapClaims {
+func claims(aud *string, iss *string, sub *string, expHours *int, scope *string, r []string) jwt.MapClaims {
 	return jwt.MapClaims{
+		"aud":   *aud,
 		"iss":   *iss,
 		"sub":   *sub,
 		"iat":   time.Now().Unix(),
