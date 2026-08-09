@@ -172,13 +172,13 @@ attack patterns.
 
 ### What's covered
 
-- **RS256 validation** (`FuzzRs256Validate`) — fuzzes the raw token string against
+- **RS256 validation** (`FuzzRs256Validate`): fuzzes the raw token string against
   a JWKS-backed validator, seeded with structured attack cases in addition to
   random mutation:
-    - `alg: none` forgery (unsigned tokens)
-    - RS256 → HS256 algorithm confusion (signing with the public key as an HMAC secret)
-    - Malformed headers, truncated/invalid base64, unknown `kid`, wrong issuer
-- **HS256 validation** (`FuzzHs256Validate`) — fuzzes shared-secret validation
+  - `alg: none` forgery (unsigned tokens)
+  - RS256 to HS256 algorithm confusion (signing with the public key as an HMAC secret)
+  - Malformed headers, truncated/invalid base64, unknown `kid`, wrong issuer
+- **HS256 validation** (`FuzzHs256Validate`): fuzzes shared-secret validation
   against malformed and adversarial token strings.
 
 ### Results
