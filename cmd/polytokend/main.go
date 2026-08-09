@@ -3,14 +3,14 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
 	"github.com/evancaplan/polytoken/config"
 	"github.com/evancaplan/polytoken/middleware"
 	"github.com/evancaplan/polytoken/resolver"
 	"github.com/evancaplan/polytoken/validator"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
 	"syscall"
 	"time"
 )

@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"net/http"
 	"github.com/evancaplan/polytoken/middleware"
+	"net/http"
 )
 
 func whoami(w http.ResponseWriter, r *http.Request) {

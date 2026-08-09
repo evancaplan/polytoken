@@ -8,10 +8,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"github.com/evancaplan/polytoken/jwks"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
-	"github.com/evancaplan/polytoken/jwks"
 	"testing"
 	"time"
 

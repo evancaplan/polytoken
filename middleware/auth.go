@@ -2,9 +2,9 @@ package middleware
 
 import (
 	"context"
-	"net/http"
 	"github.com/evancaplan/polytoken/principal"
 	"github.com/evancaplan/polytoken/resolver"
+	"net/http"
 
 	"github.com/golang-jwt/jwt/v5/request"
 )
