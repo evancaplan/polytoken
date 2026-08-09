@@ -211,6 +211,14 @@ Planned:
 - Support for additional issuer types (for example, opaque-token introspection) to exercise the extensibility of the registry.
 - Mounting configuration rather than baking it into the image, so config changes do not require a rebuild.
 
+## Related
+
+[`polytoken-mcp`](https://github.com/evancaplan/polytoken-mcp) extends this
+library into an authorization middleware for MCP (Model Context Protocol)
+servers, implementing the MCP spec's OAuth 2.1 requirements (Resource
+Indicators, issuer binding, confused-deputy prevention) on top of
+polytoken's multi-issuer JWT validation.
+
 ## License
 
 MIT
