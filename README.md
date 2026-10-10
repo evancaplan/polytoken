@@ -53,7 +53,7 @@ validator -->  verifies signature + claims, returns a Principal
    +-- RS256: RSA, public keys fetched and cached from a JWKS endpoint
 ```
 
-The HTTP layer wraps this in middleware that extracts the bearer token, runs it through the resolver, and stores the resulting `Principal` in the request context for handlers to read.
+The HTTP layer wraps this in middleware that extracts the bearer token, runs it through the resolver, and stores the resulting `Principal` in the request context for handlers to read. The principal is stored under an unexported key, so only polytoken can set it, and handlers read it with `principal.FromContext`.
 
 ## Configuration
 
